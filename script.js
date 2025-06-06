@@ -7,7 +7,6 @@ const carPreview = document.getElementById('car-preview');
 const carIdInput = document.getElementById('car-id-input');
 const colorOptions = document.querySelectorAll('.color-option');
 const previewId = document.getElementById('preview-id');
-const themeToggle = document.querySelector('.theme-toggle');
 const totalParkedEl = document.getElementById('total-parked');
 const stackOccupiedEl = document.getElementById('stack-occupied');
 const queueOccupiedEl = document.getElementById('queue-occupied');
@@ -18,7 +17,6 @@ const removeQueueBtn = document.getElementById('remove-queue-btn');
 
 // State
 let currentColor = '#3498db'; // Default color
-let isDarkMode = false;
 let isDragging = false;
 let draggedElement = null;
 let dragOffsetX = 0;
@@ -126,11 +124,7 @@ function setupEventListeners() {
         });
     });
     
-    // Theme Toggle
-    if (themeToggle) {
-        themeToggle.addEventListener('click', toggleTheme);
-    }
-    
+
     // Remove Buttons
     if (removeStackBtn) {
         removeStackBtn.addEventListener('click', removeStack);
@@ -146,14 +140,14 @@ function setupEventListeners() {
 
 // Create empty spots to ensure drag targets exist
 function createEmptySpots() {
-            const stackSpotsDiv = document.getElementById('stack-spots');
-            const queueSpotsDiv = document.getElementById('queue-spots');
+    const stackSpotsDiv = document.getElementById('stack-spots');
+    const queueSpotsDiv = document.getElementById('queue-spots');
 
     if (!stackSpotsDiv || !queueSpotsDiv) return;
     
     // Clear existing spots
-            stackSpotsDiv.innerHTML = '';
-            queueSpotsDiv.innerHTML = '';
+    stackSpotsDiv.innerHTML = '';
+    queueSpotsDiv.innerHTML = '';
 
     // Create initial empty spots
     for (let i = 0; i < DEFAULT_MAX_SPOTS; i++) {
@@ -166,7 +160,7 @@ function createEmptySpots() {
 }
 
 function createEmptySpot(index) {
-                const spotElement = document.createElement('div');
+    const spotElement = document.createElement('div');
     spotElement.className = 'spot empty';
     spotElement.dataset.index = index;
     
@@ -469,30 +463,7 @@ function getBrightness(hexColor) {
     }
 }
 
-function toggleTheme() {
-    isDarkMode = !isDarkMode;
-    document.body.classList.toggle('dark-mode', isDarkMode);
-    
-    // Update icon
-    if (themeToggle) {
-        themeToggle.innerHTML = isDarkMode ? 
-            '<i class="fas fa-sun"></i>' : 
-            '<i class="fas fa-moon"></i>';
-    }
-    
-    // Animation
-    if (isGsapLoaded) {
-        try {
-            gsap.to('body', { 
-                duration: 0.5, 
-                backgroundColor: isDarkMode ? 'var(--gray-100)' : 'var(--gray-100)',
-                ease: 'power2.inOut'
-            });
-        } catch (error) {
-            console.error('GSAP animation error:', error);
-        }
-    }
-}
+
 
 // API Interactions
 function updateParkingState() {
@@ -675,91 +646,66 @@ function updateSpots() {
     stackSpotsDiv.innerHTML = '';
     queueSpotsDiv.innerHTML = '';
     
-    // Determine if we need to add more rows for stack spots
-    const stackSpots = document.createElement('div');
-    stackSpots.className = 'spots-container';
-    
-    // Create spot rows for stack
-    createSpotRows(stackSpots, parkingState.stack, 'stack');
-    stackSpotsDiv.appendChild(stackSpots);
-    
-    // Create spot rows for queue
-    const queueSpots = document.createElement('div');
-    queueSpots.className = 'spots-container';
-    
-    createSpotRows(queueSpots, parkingState.queue, 'queue');
-    queueSpotsDiv.appendChild(queueSpots);
+    // Create spots with improved styling
+    createSpotRows(stackSpotsDiv, parkingState.stack, 'stack');
+    createSpotRows(queueSpotsDiv, parkingState.queue, 'queue');
 }
 
-// Create rows of spots for better organization
+// Create rows of spots to improve visualization
 function createSpotRows(container, spots, type) {
     const maxSpotsPerRow = parkingState.max_spots_per_row || DEFAULT_MAX_SPOTS_PER_ROW;
     
-    // Calculate number of rows needed
-    const numRows = Math.ceil(spots.length / maxSpotsPerRow);
-    
-    // Create each row
-    for (let row = 0; row < numRows; row++) {
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'spots-row';
-        
-        // Get spots for this row
-        const rowSpots = spots.slice(row * maxSpotsPerRow, (row + 1) * maxSpotsPerRow);
-        
-        // Create spots in this row
-        rowSpots.forEach((car, index) => {
-            const spotElement = createSpotElement(car, (row * maxSpotsPerRow) + index, type);
-            rowDiv.appendChild(spotElement);
-        });
-        
-        container.appendChild(rowDiv);
-    }
+    // Create spot elements
+    spots.forEach((car, index) => {
+        const spotElement = createSpotElement(car, index, type);
+        container.appendChild(spotElement);
+    });
 }
 
-// Create a single spot element
+// Create an individual spot element with better styling
 function createSpotElement(car, index, type) {
     const spotElement = document.createElement('div');
-    spotElement.className = 'spot ' + (car ? 'occupied' : 'empty');
     spotElement.dataset.index = index;
-    spotElement.dataset.type = type;
     
     if (car) {
-        // Get car data (handle both object and string formats)
-        const carId = typeof car === 'object' ? car.id : car;
-        const carColor = typeof car === 'object' ? car.color : '#3498db';
+        // Occupied spot
+        spotElement.className = 'spot occupied';
+        spotElement.style.backgroundColor = car.color || '#3498db';
         
+        // Car icon
         const iconElement = document.createElement('i');
         iconElement.className = 'fas fa-car';
-        
-        // Set color of the icon or spot background
-        if (carColor) {
-            spotElement.style.backgroundColor = carColor;
-            
-            // Set icon color based on background brightness
-            const brightness = getBrightness(carColor);
-            iconElement.style.color = brightness > 128 ? '#333' : '#fff';
-        }
-        
-        const spanElement = document.createElement('span');
-        spanElement.textContent = carId;
-        spanElement.style.color = getBrightness(carColor) > 128 ? '#333' : '#fff';
-        
         spotElement.appendChild(iconElement);
-        spotElement.appendChild(spanElement);
         
-        // Add entrance animation for new cars
-        spotElement.classList.add('fade-in');
+        // Car ID
+        const idElement = document.createElement('span');
+        idElement.textContent = car.id;
+        spotElement.appendChild(idElement);
     } else {
+        // Empty spot
+        spotElement.className = 'spot empty';
+        
+        // Cross icon
         const iconElement = document.createElement('i');
         iconElement.className = 'fas fa-square';
         iconElement.style.opacity = '0.3';
+        spotElement.appendChild(iconElement);
         
         // Add parking indicator
         const indicatorElement = document.createElement('div');
         indicatorElement.className = 'parking-indicator';
-        
-        spotElement.appendChild(iconElement);
         spotElement.appendChild(indicatorElement);
+        
+        // Add drop event handling for empty spots
+        spotElement.addEventListener('mouseenter', () => {
+            if (isDragging && draggedElement) {
+                spotElement.classList.add('drop-hover');
+            }
+        });
+        
+        spotElement.addEventListener('mouseleave', () => {
+            spotElement.classList.remove('drop-hover');
+        });
     }
     
     return spotElement;
